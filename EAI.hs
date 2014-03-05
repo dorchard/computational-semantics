@@ -1,8 +1,37 @@
+{-# LANGUAGE TypeFamilies, MultiParamTypeClasses, FlexibleInstances #-}
+
 module EAI where 
 import FSynF
 import Model
 import Model2
 import TCOM
+
+
+class Intensionalize s a where
+    data Intensional s a
+    intensionalize :: (s -> a) -> Intensional s a
+    extensionalize :: Intensional s a -> (s -> a)
+
+instance Intensionalize s Entity where
+    data Intensional s Entity = IEntity (s -> Entity)
+    
+    intensionalize x = (IEntity x)
+    extensionalize (IEntity x) = x
+
+instance Intensionalize s Bool where 
+    data Intensional s Bool = IBool (s -> Bool)
+    intensionalize x = IBool x
+    extensionalize (IBool x) = x
+
+instance (Intensionalize s a1, Intensionalize s a2) => Intensionalize s (a1 -> a2) where
+    data Intensional s (a1 -> a2) = IFun ((Intensional s a1) -> (Intensional s a2))
+    intensionalize x = IFun $ \y -> intensionalize (\i -> x i (extensionalize y i))
+    extensionalize (IFun y) = \j x -> extensionalize (y (intensionalize (\k -> x))) j
+
+
+-- extensionalize :: Intensional s a -> (s -> a)
+-- extensionalize = undefined
+
 
 data World = W1 | W2 | W3 deriving (Eq,Show)
 
