@@ -1,6 +1,6 @@
 module Model2 where 
 
-import List
+import Data.List
 import Model
 
 snowWhite' :: Entity

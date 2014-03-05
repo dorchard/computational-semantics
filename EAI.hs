@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeFamilies, MultiParamTypeClasses, FlexibleInstances #-}
+{-# LANGUAGE TypeFamilies, FlexibleInstances, TypeOperators #-}
 
 module EAI where 
 import FSynF
@@ -6,31 +6,57 @@ import Model
 import Model2
 import TCOM
 
+{- 
 
-class Intensionalize s a where
+Dominic Orchard:
+
+The following implements the 'intensionalize' and 'extensionalise'
+operations of Chapter 8 (pp.196-197) in Haskell using associated
+data type families to compute the correct types for the intensional
+and extensional version.
+
+Note that these are 'data' type families not type synonym families since
+type synonym families are non-injective which leads to ambiguity between
+the use of the Intensional type family in the range and domain of 'intensionalize'
+and 'extensionalize' and their mutually recursive definition, 
+
+
+-}
+
+class Intensionalize a where
     data Intensional s a
     intensionalize :: (s -> a) -> Intensional s a
     extensionalize :: Intensional s a -> (s -> a)
 
-instance Intensionalize s Entity where
+instance Intensionalize Entity where
     data Intensional s Entity = IEntity (s -> Entity)
     
     intensionalize x = (IEntity x)
     extensionalize (IEntity x) = x
 
-instance Intensionalize s Bool where 
+instance Intensionalize Bool where 
     data Intensional s Bool = IBool (s -> Bool)
     intensionalize x = IBool x
     extensionalize (IBool x) = x
 
-instance (Intensionalize s a1, Intensionalize s a2) => Intensionalize s (a1 -> a2) where
+instance (Intensionalize a1, Intensionalize a2) => Intensionalize (a1 -> a2) where
     data Intensional s (a1 -> a2) = IFun ((Intensional s a1) -> (Intensional s a2))
     intensionalize x = IFun $ \y -> intensionalize (\i -> x i (extensionalize y i))
     extensionalize (IFun y) = \j x -> extensionalize (y (intensionalize (\k -> x))) j
 
+-- Example
 
--- extensionalize :: Intensional s a -> (s -> a)
--- extensionalize = undefined
+iProp' :: (World -> Entity -> Bool) -> Intensional World (Entity -> Bool)
+iProp' x = intensionalize x
+
+{- 
+
+Therefore, this allows all of the type-specific examples in Chapter 8 to
+just be replaced with these generic versions
+
+-}
+
+-- End
 
 
 data World = W1 | W2 | W3 deriving (Eq,Show)
